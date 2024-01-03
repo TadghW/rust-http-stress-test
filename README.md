@@ -1,4 +1,4 @@
-# MHT, for stress testing other people's websites
+# MHT, a stress test for other people's websites
 
 'Stress Test' written in Rust with Tokio and Reqwest, front end is written in vanilla JS with Tauri. You can find the mechanistic code in 'src-tauri/src'. The interface code is in 'src' as the project is compiled with npm.
 
