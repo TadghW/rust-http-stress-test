@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Midhammer Turbo Desktop Client</title>
+    <script type="module" src="/main.js" defer></script>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Midhammer Turbo</h1>
+      <div class="metrics">
+        <div class="metrics_row"><div id="hammering"></div></div>
+        <div class="metrics_row"><div id="threadCount"></div><div id="clientCount"></div></div>
+        <div class="metrics_row"><div id="successfulResponses"></div><div id="forbiddenResponses"></div></div>
+        <div class="metrics_row"><div id="notFoundResponses"></div><div id="connectionClosedResponses"></div></div>
+        <div class="metrics_row"><div id="requestCount"></div><div id="responseCount"></div></div>
+        <div class="metrics_row"><div id="requestVolume"></div><div id="responseVolume"></div></div>
+      </div>
+      <button id="start_hammering">HAMMER</button>
+  </body>
+</html>
