@@ -1,4 +1,6 @@
-# 'Stress Test' written in Rust with Tokio and Reqwest, front end is written in vanilla JS with Tauri
+# MHT, for stress testing other people's websites
+
+'Stress Test' written in Rust with Tokio and Reqwest, front end is written in vanilla JS with Tauri
 
 ## Recommended IDE Setup
 
