@@ -1,6 +1,4 @@
-# Tauri + Vanilla
-
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Javascript.
+# 'Stress Test' written in Rust with Tokio and Reqwest, front end is written in vanilla JS with Tauri
 
 ## Recommended IDE Setup
 
