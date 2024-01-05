@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 use reqwest::{Client, self, Response};
 use reqwest::header::HeaderMap;
 use tokio::task::{self, JoinHandle};
-use serde_json::json;
+use serde_json::{json, Value};
 use std::time::Duration;
 use std::thread::sleep;
 use std::sync::{Arc, RwLock}; 
@@ -14,66 +14,109 @@ use rand::SeedableRng;
 use rand::Rng;
 
 lazy_static! {
-    pub static ref THREAD_COUNT: Arc<RwLock<u16>> = Arc::new(RwLock::new(0u16));
-    pub static ref CLIENT_COUNT: Arc<RwLock<u16>> = Arc::new(RwLock::new(0u16));
-    pub static ref SUCCESSFUL_RESPONSES: Arc<RwLock<u32>> = Arc::new(RwLock::new(0u32));
-    pub static ref FORBIDDEN_RESPONSES: Arc<RwLock<u32>> = Arc::new(RwLock::new(0u32));
-    pub static ref NOT_FOUND_RESPONSES: Arc<RwLock<u32>> = Arc::new(RwLock::new(0u32));
-    pub static ref CONNECTION_CLOSED_RESPONSES: Arc<RwLock<u32>> = Arc::new(RwLock::new(0u32));
-    pub static ref REQUEST_COUNT: Arc<RwLock<u64>> = Arc::new(RwLock::new(0u64));
-    pub static ref RESPONSE_COUNT: Arc<RwLock<u64>> = Arc::new(RwLock::new(0u64));
-    pub static ref REQUEST_VOLUME: Arc<RwLock<u128>> = Arc::new(RwLock::new(0u128));
-    pub static ref RESPONSE_VOLUME: Arc<RwLock<u128>> = Arc::new(RwLock::new(0u128));
+    pub static ref THREAD_COUNT: Arc<RwLock<usize>> = Arc::new(RwLock::new(0usize));
+    pub static ref CLIENT_COUNT: Arc<RwLock<usize>> = Arc::new(RwLock::new(0usize));
+    pub static ref SUCCESSFUL_RESPONSES: Arc<RwLock<usize>> = Arc::new(RwLock::new(0usize));
+    pub static ref FORBIDDEN_RESPONSES: Arc<RwLock<usize>> = Arc::new(RwLock::new(0usize));
+    pub static ref NOT_FOUND_RESPONSES: Arc<RwLock<usize>> = Arc::new(RwLock::new(0usize));
+    pub static ref CONNECTION_CLOSED_RESPONSES: Arc<RwLock<usize>> = Arc::new(RwLock::new(0usize));
+    pub static ref REQUEST_COUNT: Arc<RwLock<usize>> = Arc::new(RwLock::new(0usize));
+    pub static ref RESPONSE_COUNT: Arc<RwLock<usize>> = Arc::new(RwLock::new(0usize));
+    pub static ref REQUEST_VOLUME: Arc<RwLock<usize>> = Arc::new(RwLock::new(0usize));
+    pub static ref RESPONSE_VOLUME: Arc<RwLock<usize>> = Arc::new(RwLock::new(0usize));
     pub static ref HAMMER: Arc<RwLock<bool>> = Arc::new(RwLock::new(false));
 }
 
 #[tauri::command]
-fn report_metrics() -> String {
+fn report_metrics() -> Value {
 
-    let thread_count_access: Arc<RwLock<u16>> = Arc::clone(&THREAD_COUNT);
-    let client_count_access: Arc<RwLock<u16>> = Arc::clone(&CLIENT_COUNT);
-    let successful_responses_access: Arc<RwLock<u32>> = Arc::clone(&SUCCESSFUL_RESPONSES);
-    let forbidden_responses_access: Arc<RwLock<u32>> = Arc::clone(&FORBIDDEN_RESPONSES);
-    let not_found_response_access: Arc<RwLock<u32>> = Arc::clone(&NOT_FOUND_RESPONSES);
-    let connection_closed_responses_access: Arc<RwLock<u32>> = Arc::clone(&CONNECTION_CLOSED_RESPONSES);
-    let request_count_access: Arc<RwLock<u64>> = Arc::clone(&REQUEST_COUNT);
-    let response_count_access: Arc<RwLock<u64>> = Arc::clone(&RESPONSE_COUNT);
-    let request_volume_access: Arc<RwLock<u128>> = Arc::clone(&REQUEST_VOLUME);
-    let response_volume_access: Arc<RwLock<u128>> = Arc::clone(&RESPONSE_VOLUME);
+    let thread_count_access: Arc<RwLock<usize>> = Arc::clone(&THREAD_COUNT);
+    let client_count_access: Arc<RwLock<usize>> = Arc::clone(&CLIENT_COUNT);
+    let successful_responses_access: Arc<RwLock<usize>> = Arc::clone(&SUCCESSFUL_RESPONSES);
+    let forbidden_responses_access: Arc<RwLock<usize>> = Arc::clone(&FORBIDDEN_RESPONSES);
+    let not_found_response_access: Arc<RwLock<usize>> = Arc::clone(&NOT_FOUND_RESPONSES);
+    let connection_closed_responses_access: Arc<RwLock<usize>> = Arc::clone(&CONNECTION_CLOSED_RESPONSES);
+    let request_count_access: Arc<RwLock<usize>> = Arc::clone(&REQUEST_COUNT);
+    let response_count_access: Arc<RwLock<usize>> = Arc::clone(&RESPONSE_COUNT);
+    let request_volume_access: Arc<RwLock<usize>> = Arc::clone(&REQUEST_VOLUME);
+    let response_volume_access: Arc<RwLock<usize>> = Arc::clone(&RESPONSE_VOLUME);
     let hammer_access: Arc<RwLock<bool>> = Arc::clone(&HAMMER);
 
-    let thread_count: String = thread_count_access.read().unwrap().to_string();
-    let client_count: String = client_count_access.read().unwrap().to_string();
-    let successful_responses: String = successful_responses_access.read().unwrap().to_string();
-    let forbidden_responses: String = forbidden_responses_access.read().unwrap().to_string();
-    let not_found_responses: String = not_found_response_access.read().unwrap().to_string();
-    let connnection_closed_responses: String = connection_closed_responses_access.read().unwrap().to_string();
-    let request_count: String = request_count_access.read().unwrap().to_string();
-    let response_count: String = response_count_access.read().unwrap().to_string();
-    let request_volume: String = request_volume_access.read().unwrap().to_string();
-    let response_volume: String = response_volume_access.read().unwrap().to_string();
-    let hammering: String = hammer_access.read().unwrap().to_string();
+    let thread_count: String = match thread_count_access.read() {
+         Ok(data) => data.to_string(),
+         Err(failed) => {println!("thread_count read failed, attempting recovery"); failed.into_inner().to_string()}
+    };
 
-    let metrics: String = json!({
+    let client_count: String = match client_count_access.read() {
+        Ok(data) => data.to_string(),
+        Err(failed) => {println!("client_count read failed, attempting recovery"); failed.into_inner().to_string()}
+    };
+
+    let successful_responses: String = match successful_responses_access.read() {
+        Ok(data) => data.to_string(),
+        Err(failed) => {println!("successful_responses read failed, attempting recovery"); failed.into_inner().to_string()}
+    };
+
+    let forbidden_responses: String = match forbidden_responses_access.read() {
+        Ok(data) => data.to_string(),
+        Err(failed) => {println!("forbidden_responses read failed, attempting recovery"); failed.into_inner().to_string()}
+    };
+
+    let not_found_responses: String = match not_found_response_access.read() {
+        Ok(data) => data.to_string(),
+        Err(failed) => {println!("not_found_responses failed, attempting recovery"); failed.into_inner().to_string()}
+    };
+
+    let connection_closed_responses: String = match connection_closed_responses_access.read() {
+        Ok(data) => data.to_string(),
+        Err(failed) => {println!("connection_closed_count read failed, attempting recovery"); failed.into_inner().to_string()}
+    };
+
+    let request_count: String = match request_count_access.read() {
+        Ok(data) => data.to_string(),
+        Err(failed) => {println!("client_count read failed, attempting recovery"); failed.into_inner().to_string()}
+    };
+
+    let response_count: String = match response_count_access.read() {
+        Ok(data) => data.to_string(),
+        Err(failed) => {println!("client_count read failed, attempting recovery"); failed.into_inner().to_string()}
+    };
+
+    let request_volume: String = match request_volume_access.read() {
+        Ok(data) => data.to_string(),
+        Err(failed) => {println!("client_count read failed, attempting recovery"); failed.into_inner().to_string()}
+    };
+
+    let response_volume: String = match response_volume_access.read() {
+        Ok(data) => data.to_string(),
+        Err(failed) => {println!("client_count read failed, attempting recovery"); failed.into_inner().to_string()}
+    };
+
+    let hammering: String = match hammer_access.read() {
+        Ok(data) => data.to_string(),
+        Err(failed) => {println!("client_count read failed, attempting recovery"); failed.into_inner().to_string()}
+    };
+
+    let metrics: Value = json!({
         "threadCount": thread_count,
         "clientCount": client_count,
         "successfulResponses": successful_responses,
         "forbiddenResponses": forbidden_responses,
         "notFoundResponses": not_found_responses,
-        "connectionClosedResponses": connnection_closed_responses,
+        "connectionClosedResponses": connection_closed_responses,
         "requestCount": request_count,
         "responseCount": response_count,
-        "requestVolumne": request_volume,
+        "requestVolume": request_volume,
         "responseVolume": response_volume,
         "hammering": hammering
-    }).to_string();
+    });
 
     return metrics
 
 }
 
 #[tauri::command]
-async fn start_hammering(targets: Vec<String>, number_of_threads: u8, agent_details: Vec<String>, sleep_duration: u64) -> () {
+async fn start_hammering(targets: Vec<String>, number_of_threads: usize, agent_details: Vec<String>, sleep_duration: u64) -> () {
 
     //Set HAMMER to true
     let hammer_access: Arc<RwLock<bool>> = Arc::clone(&HAMMER);
@@ -81,6 +124,8 @@ async fn start_hammering(targets: Vec<String>, number_of_threads: u8, agent_deta
         let mut hammer_write: std::sync::RwLockWriteGuard<'_, bool> = hammer_access.write().unwrap();
         *hammer_write = true;
     }
+
+    println!("Starting the hammer...");
 
     //Create thread registry 
     let mut handles: Vec<JoinHandle<()>> = Vec::new();
@@ -98,15 +143,15 @@ async fn start_hammering(targets: Vec<String>, number_of_threads: u8, agent_deta
             //Create access to thread_count, client_count, agent_detail, and target variables for thread to claim
             let agents_access: Arc<Vec<String>> = Arc::clone(&agents_arc);
             let targets_access: Arc<Vec<String>> = Arc::clone(&targets_arc);
-            let thread_count_access: Arc<RwLock<u16>> = Arc::clone(&THREAD_COUNT);
+            let thread_count_access: Arc<RwLock<usize>> = Arc::clone(&THREAD_COUNT);
 
             //Iterate thread count
-            let this_thread_num: u16;
+            let this_thread_num: usize;
 
             {
-                let mut thread_count_data: std::sync::RwLockWriteGuard<u16> = match thread_count_access.write(){
+                let mut thread_count_data: std::sync::RwLockWriteGuard<usize> = match thread_count_access.write(){
                     Ok(data) => data,
-                    Err(poisoned) => {println!("thread_count_data is poisoned, overwriting"); poisoned.into_inner()}
+                    Err(_poisoned) => panic!("thread_count_data is poisoned => no catch case written => panicking")
                 };
                 println!("Spawned thread {:?}", (*thread_count_data + 1));
                 *thread_count_data += 1;
@@ -148,6 +193,18 @@ async fn start_hammering(targets: Vec<String>, number_of_threads: u8, agent_deta
         {
             let hammer_read: std::sync::RwLockReadGuard<'_, bool> = hammer_access.read().unwrap();
             if !*hammer_read {
+                println!("User requested a halt to hammering. Killing all threads..");
+                for handle in handles {
+                    handle.abort()
+                }
+                println!("Operations stopped.");
+
+                let hammer_access: Arc<RwLock<bool>> = Arc::clone(&HAMMER);
+                {
+                    let mut hammer_write: std::sync::RwLockWriteGuard<'_, bool> = hammer_access.write().unwrap();
+                    *hammer_write = false;
+                }
+
                 return ()
             };
         }
@@ -156,42 +213,88 @@ async fn start_hammering(targets: Vec<String>, number_of_threads: u8, agent_deta
 
 }
 
-async fn make_request(thread_num: u16, target_url: String, agent_details: String) -> Result<(), reqwest::Error> {
+async fn make_request(thread_num: usize, target_url: String, agent_details: String) -> Result<(), reqwest::Error> {
 
     //assemble client
     let mut headers: HeaderMap = reqwest::header::HeaderMap::new();
     headers.insert(reqwest::header::USER_AGENT, reqwest::header::HeaderValue::from_str(&agent_details).unwrap());
+    let this_request_size: usize = calculate_request_size(&headers).await;
+
     let client: Client = reqwest::Client::builder()
         .default_headers(headers)
         .build()?;
 
     //make request
     let res: Response = client.get(&target_url).send().await?;
+    let response_status: reqwest::StatusCode = res.status();
+    let this_response_size: usize = res.text().await?.len();
 
-    let scoped_response: &reqwest::Response = &res;
-    let response_status: reqwest::StatusCode = scoped_response.status();
-    let this_response_size: u128 = calculate_response_size(scoped_response);
+    //record size of request
+    let request_volume_access: Arc<RwLock<usize>> = Arc::clone(&REQUEST_VOLUME);
+    {
+        let mut request_volume_write: std::sync::RwLockWriteGuard<'_, usize> = match request_volume_access.write(){
+            Ok(data) => data,
+            Err(_poisoned) => panic!("Request volume RwLock has been poisoned. No catch case. Panicking.")
+        };
+        *request_volume_write += this_request_size;
+    }
 
-    if scoped_response.status().is_success() {
+    //record size of response
+    let response_volume_access: Arc<RwLock<usize>> = Arc::clone(&RESPONSE_VOLUME);
+    {
+        let mut response_volume_write: std::sync::RwLockWriteGuard<'_, usize> = match response_volume_access.write(){
+            Ok(data) => data,
+            Err(_poisoned) => panic!("Request volume RwLock has been poisoned. No catch case. Panicking.")
+        };
+        *response_volume_write += this_response_size;
+    }
 
-        let _successful_responses_access: Arc<RwLock<u32>> = Arc::clone(&SUCCESSFUL_RESPONSES);
-        let _forbidden_responses_access: Arc<RwLock<u32>> = Arc::clone(&FORBIDDEN_RESPONSES);
-        let _not_found_response_access: Arc<RwLock<u32>> = Arc::clone(&NOT_FOUND_RESPONSES);
-        let _request_count_access: Arc<RwLock<u64>> = Arc::clone(&REQUEST_COUNT);
-        let _response_count_access: Arc<RwLock<u64>> = Arc::clone(&RESPONSE_COUNT);
-        let _request_volume_access: Arc<RwLock<u128>> = Arc::clone(&REQUEST_VOLUME);
+    //handle response
+    if response_status.is_success(){
+        match response_status {
 
-        {
-            let response_volume_access: Arc<RwLock<u128>> = Arc::clone(&RESPONSE_VOLUME);
-            let mut response_volume_ptr = response_volume_access.write().unwrap();
-            *response_volume_ptr += this_response_size;
-        }
-
-        println!("Thread {}: Successful request to {} received status: {} (Response Size: {})", thread_num, target_url, response_status, this_response_size);
+            reqwest::StatusCode::OK => {
+                let successful_responses_access: Arc<RwLock<usize>> = Arc::clone(&SUCCESSFUL_RESPONSES);
+                {
+                    let mut successful_responses_write = match successful_responses_access.write(){
+                        Ok(data) => data,
+                        Err(_poisoned) => panic!("Successful response RwLock poisoned. No catch case. Panicking.")
+                    };
+                    *successful_responses_write += 1;
+                }
+            }
+            reqwest::StatusCode::FORBIDDEN => {
+                let forbidden_responses_access: Arc<RwLock<usize>> = Arc::clone(&FORBIDDEN_RESPONSES);
+                {
+                    let mut forbidden_responses_write = match forbidden_responses_access.write(){
+                        Ok(data) => data,
+                        Err(_poisoned) => panic!("Forbidden response RwLock poisoned. No catch case. Panicking.")
+                    };
+                    *forbidden_responses_write += 1;
+                }
+            }
+            reqwest::StatusCode::NOT_FOUND => {
+                let not_found_response_access: Arc<RwLock<usize>> = Arc::clone(&NOT_FOUND_RESPONSES);
+                {
+                    let mut not_found_responses_write = match not_found_response_access.write(){
+                        Ok(data) => data,
+                        Err(_poisoned) => panic!("Not found responses RwLock poisoned. No catch case. Panicking.")
+                    };
+                    *not_found_responses_write += 1;
+                }
+            }
+            _ => {}
+        };
+        println!("Thread {}: Successfully sent request to {}. Server responded with {}. (Request size: {} <=> Response Size: {})", thread_num, target_url, response_status, this_request_size, this_response_size);
     } else {
-        let connection_closed_responses_access: Arc<RwLock<u32>> = Arc::clone(&CONNECTION_CLOSED_RESPONSES);
-        let mut connection_closed_responses_ptr: std::sync::RwLockWriteGuard<'_, u32> = connection_closed_responses_access.write().unwrap();
+        let connection_closed_responses_access: Arc<RwLock<usize>> = Arc::clone(&CONNECTION_CLOSED_RESPONSES);
+
+        let mut connection_closed_responses_ptr: std::sync::RwLockWriteGuard<'_, usize> = match connection_closed_responses_access.write(){
+            Ok(data) => data,
+            Err(_poisoned) => panic!("Connection closed responses RwLock poisoned. No catch case. Panicking.")
+        };
         *connection_closed_responses_ptr += 1;
+        
         println!("Thread {}: Unsuccessful request to {} received status: {} (Response Size: {})", thread_num, target_url, response_status, this_response_size);
     }
 
@@ -199,44 +302,36 @@ async fn make_request(thread_num: u16, target_url: String, agent_details: String
 }
 
 #[tauri::command]
-fn stop_hammering() -> String {
+async fn stop_hammering() -> String {
     
+    //Set HAMMER to false
     let hammer_access: Arc<RwLock<bool>> = Arc::clone(&HAMMER);
-    let mut hammer: std::sync::RwLockWriteGuard<'_, bool> = hammer_access.write().unwrap();
-    
     {
-        *hammer = false;
+        let mut hammer_write: std::sync::RwLockWriteGuard<'_, bool> = match hammer_access.write(){
+            Ok(data) => data,
+            Err(_poisoned) => panic!("hammer RwLock is poisoned, no catch case, panicking")
+        };
+        *hammer_write = false;
     }
+    
+    return "Hammering stopped".to_string();
 
-    return "Hammering stopped.".to_string();
 }
 
-#[tauri::command]
-fn test() -> String {
-    return "hello from Rust binary :)".to_string();
-}
-
-
-
-/*fn calculate_request_size(url: String, _agent_details: String) -> u128 {
-    let method: &str = "GET";
-    let version: &str = "HTTP/1.1";
-    let _request_line_size: usize = format!("{} {} {}", method, url, version).len() + 2; // +2 for "\r\n"
-    let _host: &str = "null";
-    return 1
-}*/
-
-fn calculate_response_size(_response: &reqwest::Response) -> u128 {
-    return 1
+async fn calculate_request_size(headers: &HeaderMap) -> usize {
+    headers.iter().map(|(key, value)| {
+        key.as_str().len() + value.as_bytes().len()
+    }).sum()
 }
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![start_hammering,
+        .invoke_handler(tauri::generate_handler![
+            start_hammering,
             stop_hammering,
-            report_metrics,
-            test])
+            report_metrics
+        ])
         .run(tauri::generate_context!())
-        .expect("error launching tauri :(");
+        .expect("Failed to launch midhammer turbo, unknown exception");
 }
 
