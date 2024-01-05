@@ -8,7 +8,6 @@
 - [Rust](https://www.rust-lang.org/tools/install) choosing [Nightly](https://doc.rust-lang.org/book/appendix-07-nightly-rust.html) as your default toolchain during the installation process
 - [Node.js](https://nodejs.org/en/download)
 - [npm](https://www.npmjs.com/)
-- [Tauri](https://www.npmjs.com/package/@tauri-apps/cli)
 
 2) Clone the repository into a local directory
 
