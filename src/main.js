@@ -333,7 +333,17 @@ const defaultTargets = [
   "cisrussia2017.mid.ru",
   "oldrusconshanghai.mid.ru",
   "archive-czech.mid.ru",
-  "archive-khudzhand.mid.ru"
+  "archive-khudzhand.mid.ru",
+  "new-tel.net",
+  "nppmayak.ru",
+  "service-telecom.net",
+  "supr.ru",
+  "oktell.ru",
+  "lobaevarms.com",
+  "orsis.com",
+  "zid.ru",
+  "zala-aero.com",
+  "flyseeagro.ru"
 ]
 
 const agentDetails = [
