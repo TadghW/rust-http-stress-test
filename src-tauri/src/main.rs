@@ -217,9 +217,16 @@ async fn make_request(thread_num: usize, target_url: String, agent_details: Stri
 
     //assemble client
     let mut headers: HeaderMap = reqwest::header::HeaderMap::new();
+    headers.insert(reqwest::header::ACCEPT, reqwest::header::HeaderValue::from_str("text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7").unwrap());
+    headers.insert(reqwest::header::ACCEPT_ENCODING, reqwest::header::HeaderValue::from_str("gzip, deflate, br").unwrap());
+    headers.insert(reqwest::header::CACHE_CONTROL, reqwest::header::HeaderValue::from_str("max-age=0").unwrap());
+    headers.insert(reqwest::header::CONNECTION, reqwest::header::HeaderValue::from_str("keep-alive").unwrap());
+    headers.insert(reqwest::header::HOST, reqwest::header::HeaderValue::from_str(&target_url[8..(&target_url.len() - 4)]).unwrap());
+    headers.insert(reqwest::header::REFERER, reqwest::header::HeaderValue::from_str(&target_url).unwrap());
+    headers.insert(reqwest::header::UPGRADE_INSECURE_REQUESTS, reqwest::header::HeaderValue::from_str("1").unwrap());
     headers.insert(reqwest::header::USER_AGENT, reqwest::header::HeaderValue::from_str(&agent_details).unwrap());
-    let this_request_size: usize = calculate_request_size(&headers).await;
 
+    let this_request_size: usize = calculate_request_size(&headers).await;
     let client: Client = reqwest::Client::builder()
         .default_headers(headers)
         .build()?;
@@ -227,7 +234,28 @@ async fn make_request(thread_num: usize, target_url: String, agent_details: Stri
     //make request
     let res: Response = client.get(&target_url).send().await?;
     let response_status: reqwest::StatusCode = res.status();
-    let this_response_size: usize = res.text().await?.len();
+    let res_as_bytes: Vec<u8> = res.bytes().await?.to_vec();
+    let total_response_size: usize = res_as_bytes.len();
+
+    //record request made
+    let request_count_access: Arc<RwLock<usize>> = Arc::clone(&REQUEST_COUNT);
+    {
+        let mut request_count_write: std::sync::RwLockWriteGuard<'_, usize> = match request_count_access.write(){
+            Ok(data) => data,
+            Err(_poisoned) => panic!("Request volume RwLock has been poisoned. No catch case. Panicking.")
+        };
+        *request_count_write += 1;
+    }
+
+
+    let response_count_access: Arc<RwLock<usize>> = Arc::clone(&RESPONSE_COUNT);
+    {
+        let mut response_count_write: std::sync::RwLockWriteGuard<'_, usize> = match response_count_access.write(){
+            Ok(data) => data,
+            Err(_poisoned) => panic!("Request volume RwLock has been poisoned. No catch case. Panicking.")
+        };
+        *response_count_write += 1;
+    }
 
     //record size of request
     let request_volume_access: Arc<RwLock<usize>> = Arc::clone(&REQUEST_VOLUME);
@@ -246,7 +274,7 @@ async fn make_request(thread_num: usize, target_url: String, agent_details: Stri
             Ok(data) => data,
             Err(_poisoned) => panic!("Request volume RwLock has been poisoned. No catch case. Panicking.")
         };
-        *response_volume_write += this_response_size;
+        *response_volume_write += total_response_size;
     }
 
     //handle response
@@ -285,7 +313,8 @@ async fn make_request(thread_num: usize, target_url: String, agent_details: Stri
             }
             _ => {}
         };
-        println!("Thread {}: Successfully sent request to {}. Server responded with {}. (Request size: {} <=> Response Size: {})", thread_num, target_url, response_status, this_request_size, this_response_size);
+        println!("Thread {}: Successfully sent request to {}. Server responded with {}. (Request size: {} <=> Response Size: {})", thread_num, target_url, response_status, this_request_size, total_response_size);
+        println!("Response Body:  {:?}", String::from_utf8(res_as_bytes));
     } else {
         let connection_closed_responses_access: Arc<RwLock<usize>> = Arc::clone(&CONNECTION_CLOSED_RESPONSES);
 
@@ -295,7 +324,7 @@ async fn make_request(thread_num: usize, target_url: String, agent_details: Stri
         };
         *connection_closed_responses_ptr += 1;
         
-        println!("Thread {}: Unsuccessful request to {} received status: {} (Response Size: {})", thread_num, target_url, response_status, this_response_size);
+        println!("Thread {}: Unsuccessful request to {} received status: {} (Response Size: {})", thread_num, target_url, response_status, total_response_size);
     }
 
     Ok(())
