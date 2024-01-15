@@ -460,7 +460,7 @@ function renderMetrics() {
 async function startHammering(){
   hammering = true
   hammering_button.innerHTML = 'HAMMERING...'
-  await invoke('start_hammering', { targets: defaultTargets, numberOfThreads: 3, agentDetails: agentDetails, sleepDuration: 1000});
+  await invoke('start_hammering', { targets: defaultTargets, numberOfThreads: 1, agentDetails: agentDetails, sleepDuration: 1000});
 }
 
 async function startMonitoring(){
