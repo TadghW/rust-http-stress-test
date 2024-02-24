@@ -231,7 +231,6 @@ async fn make_request(thread_num: usize, target_url: String, agent_details: Stri
     headers.insert(reqwest::header::REFERER, reqwest::header::HeaderValue::from_str(&target_url).unwrap());
     headers.insert(reqwest::header::UPGRADE_INSECURE_REQUESTS, reqwest::header::HeaderValue::from_str("1").unwrap());
     headers.insert(reqwest::header::USER_AGENT, reqwest::header::HeaderValue::from_str(&agent_details).unwrap());
-    headers.insert(reqwest::header::COOKIE, reqwest::header::HeaderValue::from_str("_ym_uid=1703020561913702081; _ym_d=1703020561; BITRIX_SM_GUEST_ID=106823832; BITRIX_SM_TZ=Europe/Dublin; BX_USER_ID=768b2c165bc4b62cc46768b5f09cd35f; BITRIX_CONVERSION_CONTEXT_gu=%7B%22ID%22%3A15970%2C%22EXPIRE%22%3A1704747540%2C%22UNIQUE%22%3A%5B%22conversion_visit_day%22%5D%7D; PHPSESSID=e5bdb4695c6868bd9b4013e4c9ec1b23; BITRIX_SM_LAST_VISIT=08.01.2024%2020%3A27%3A02; TS019eb04f=01accd64a9fb94c61ca0070b6f9ae26a4d2f9570e44d380b90862ef0cc16a8070d6f7276b8a38188006e24c60a9275aa063201f834; TS01e3f19a=01accd64a9fb94c61ca0070b6f9ae26a4d2f9570e44d380b90862ef0cc16a8070d6f7276b8a38188006e24c60a9275aa063201f834; TSPD_101=08765fb817ab28003bf5e80b0c8bbfa68b56f401068529577f5ac24c3ab6269ef8206efd72987a9e508e10c3f9cc6d2108aef44023051800fcfefc2b715a80445ab2dc301cd5ef59be670476ddd4b40d; TSea5b0cf8029=08765fb817ab28002550f602caafa3eb353806c6bd8df34b22d909ff95f2c8d50b953f4dd5b33d0535e302cee52fa656; TS842d9d10027=08765fb817ab2000c342cd9585b7a0b211e5da8d95665cbfde0706cdeac983e17b58c5b6d4cc81e4085c5417e4113000b6b636e511f480a06b09d6021a49bc5b5ac89ee65eed3b9144c31fb5337e6f9aeaee3df40f532fec247086ac0ea2af41; TS00000000076=08765fb817ab2800a52350fcef538ff8e58a4504d6889076ea386cc437a4030a38642f879fe8372cd6feaaacacfc263308e217692209d000cb2e2e5a254f72e7c7dbc8848bb44519db18917e82412fdacd92c95595c8c02975d380ed41b91f0db77363a6ad13c92e740575da30a31840563d55bcb4b4353faa96f630f6e031ca16b01ac278c5fdeb2b5bd1e41b47228594ef2ec5268d533ce96f073be22d9c81cb1c1c17753d9f35e0f70125320f24a14d2611d4304f03818b66462c39eb1e1f06aafdc71b423c414f3de8ee54a02bf2486493c0e42e343cd631db40d20646f2a81e873b433cfcd9c5b735d56f8e81c30b0e8dd353c40fb808f67daca9da7de095e576621d51c0b8; TSea5b0cf8077=08765fb817ab28004cb7324fef662eaa9d4d2f878346f09edff950187147f8c8b46c911eff0e95af35cc70b75136bedb0865c0d0661720000d6eafae55c83511024c88195d9cd5c37c5194c73090d4b1a63b904fb93f5504; TSPD_101_DID=08765fb817ab2800a52350fcef538ff8e58a4504d6889076ea386cc437a4030a38642f879fe8372cd6feaaacacfc263308e217692206380013934923e19c7ead7551bf6c6453f2dd14f3caa7c3ca0314ebf47c0a43ecd0884d6d936b3d72c7f1937c1dc3cbeeda07f0753ff701ea4ef0").unwrap());
 
     let this_request_size: usize = calculate_request_size(&headers).await;
     let client: Client = reqwest::Client::builder()
@@ -368,6 +367,6 @@ fn main() {
             report_metrics
         ])
         .run(tauri::generate_context!())
-        .expect("Failed to launch midhammer turbo, unknown exception");
+        .expect("Failed to launch, unknown exception");
 }
 
